@@ -1,0 +1,13 @@
+FROM golang:1.13-alpine3.10 AS build-containerd
+RUN apk --no-cache add git curl build-base linux-headers libseccomp-dev
+WORKDIR /go/src/github.com/containerd/containerd
+COPY . /go/src/github.com/containerd/containerd
+RUN BUILDTAGS='seccomp apparmor no_btrfs no_cri' make
+
+# TODO: add criu
+
+FROM fermayo/runc:alpine
+RUN apk --no-cache add ca-certificates
+VOLUME /var/lib
+COPY --from=build-containerd /go/src/github.com/containerd/containerd/bin/* /usr/local/bin/
+CMD ["ctr"]
